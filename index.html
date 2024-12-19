@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Form with Signature</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.5/signature_pad.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.5/signature_pad.umd.min.js"></script>
     <style>
         body { 
             max-width: 800px; 
@@ -26,6 +26,7 @@
             border: 1px solid #ccc; 
             border-radius: 4px; 
             background-color: #fff;
+            touch-action: none;
         }
         #clear-button {
             margin-top: 10px;
@@ -43,6 +44,11 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        .signature-container {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -59,7 +65,9 @@
 
         <div class="form-group">
             <label for="signature">Signature:</label>
-            <canvas id="signature-pad" width="400" height="200"></canvas>
+            <div class="signature-container">
+                <canvas id="signature-pad" width="400" height="200"></canvas>
+            </div>
             <button type="button" id="clear-button">Clear Signature</button>
         </div>
 
@@ -67,47 +75,64 @@
     </form>
 
     <script>
-        // Initialize signature pad
-        const canvas = document.getElementById('signature-pad');
-        const signaturePad = new SignaturePad(canvas);
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize signature pad
+            const canvas = document.getElementById('signature-pad');
+            const signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)'
+            });
 
-        // Clear signature button
-        document.getElementById('clear-button').addEventListener('click', function() {
-            signaturePad.clear();
-        });
-
-        // Handle form submission
-        function handleSubmit(event) {
-            event.preventDefault();
-            
-            if (signaturePad.isEmpty()) {
-                alert('Please provide a signature');
-                return;
+            // Adjust canvas size
+            function resizeCanvas() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                signaturePad.clear(); // Clear the canvas after resize
             }
 
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                signature: signaturePad.toDataURL()
-            };
+            // Set initial size
+            resizeCanvas();
 
-            // Replace this URL with your Google Apps Script web app URL
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbwDzkxcl6GdJ7_GYwCRATeTI25NrJH18XotD1Gj42Xs3tPGarcel-y-ro7FSddAanGVzg/exec';
-
-            fetch(scriptURL, {
-                method: 'POST',
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                alert('Form submitted successfully!');
+            // Clear signature button
+            document.getElementById('clear-button').addEventListener('click', function() {
                 signaturePad.clear();
-                document.getElementById('myForm').reset();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error submitting form');
             });
-        }
+
+            // Handle form submission
+            window.handleSubmit = function(event) {
+                event.preventDefault();
+                
+                if (signaturePad.isEmpty()) {
+                    alert('Please provide a signature');
+                    return;
+                }
+
+                const formData = {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    signature: signaturePad.toDataURL()
+                };
+
+                // Replace this URL with your Google Apps Script web app URL
+                const scriptURL = 'https://script.google.com/macros/s/AKfycbwDzkxcl6GdJ7_GYwCRATeTI25NrJH18XotD1Gj42Xs3tPGarcel-y-ro7FSddAanGVzg/exec';
+
+                fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                })
+                .then(response => {
+                    alert('Form submitted successfully!');
+                    signaturePad.clear();
+                    document.getElementById('myForm').reset();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error submitting form');
+                });
+            };
+        });
     </script>
 </body>
 </html>
